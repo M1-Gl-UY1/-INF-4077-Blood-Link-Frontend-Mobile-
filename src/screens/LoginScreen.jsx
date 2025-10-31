@@ -15,6 +15,8 @@ const LoginScreen = () => {
   const handleLogin = () => {
     // Logique de connexion ici
     console.log('Login avec:', email, password);
+    navigation.navigate('ProviderStack', { screen: 'Provider' });
+
   };
 
   return (
