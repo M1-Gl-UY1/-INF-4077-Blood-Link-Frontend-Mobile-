@@ -8,7 +8,7 @@ export default function ProviderLayout({ children }) {
       <View style={styles.content}>
         {children}
       </View>
-      <NavBar /> {/* 🔥 toujours affichée en bas */}
+      <NavBar />
     </View>
   );
 }

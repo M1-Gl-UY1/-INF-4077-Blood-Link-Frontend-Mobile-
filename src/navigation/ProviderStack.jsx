@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProviderHome from '../screens/ProviderHome';
 import ProviderGift from '../screens/ProviderGift';
 import ProviderProfile from '../screens/ProviderProfile';
-import ProviderLayout from './ProviderLayout'; // 🔥 notre layout
+import ProviderLayout from './ProviderLayout';
 
 const Stack = createNativeStackNavigator();
 

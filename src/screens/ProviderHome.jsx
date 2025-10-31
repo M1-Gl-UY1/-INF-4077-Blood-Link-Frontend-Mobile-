@@ -1,20 +1,19 @@
 import { useEffect } from "react";
-import { View ,Text, Image, StyleSheet, FlatList} from "react-native";
+import { View ,Text, Image, StyleSheet, FlatList,Pressable} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import logo2 from '../assets/logo_2.png'
 import adn from '../assets/adn.png'
 import { bloodAlerts } from "../constants/fakealert";
 import Alert from "../components/Alert";
 import { COLORS } from "../constants/colors";
-import NavBar from "../components/NavBar";
-import { StatusBar } from 'react-native';
+import { useNavigation } from "@react-navigation/native";
 
 export default function ProviderHome() {
     useEffect(()=>{
     },[])
-    
+    const navigation=useNavigation()
     return(<>
-        <SafeAreaView style={[{backgroundColor:'#ffffffff',flex:1,paddingBottom:-17}]}>
+        <SafeAreaView style={[{backgroundColor:'#ffffffff',flex:1,paddingBottom:-25}]}>
             <View style={styles.containerTop}>
                 <View style={styles.topBoardContainer}>
                 <View style={styles.topBoardLeft}>
@@ -30,9 +29,9 @@ export default function ProviderHome() {
             keyExtractor={(item,index)=>item.id.toString()}
             renderItem={({item})=>{
                 return(
-                    <View style={{flex:1}}>
+                    <Text style={{flex:1}} onPress={()=>navigation.navigate('AlertDetails',{ bloodAlert: item })}>
                         <Alert bloodAlert={item}/>
-                    </View>
+                    </Text>
                 )
             }}
             contentContainerStyle={styles.listContainer}>
