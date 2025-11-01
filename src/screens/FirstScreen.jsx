@@ -13,6 +13,12 @@ const FirstScreen = ({navigation}) => {
     });
   };
 
+  const handleSelectRegister = () => {
+    navigation.navigate('SelectUser', { 
+      
+    });
+  };
+
   return (
     <View style={styles.container}>
       {/* Image de fond supérieure SVG */}
@@ -56,7 +62,7 @@ const FirstScreen = ({navigation}) => {
           />
           <ButtonCustom 
             title="S'inscrire" 
-            onPress={() => {}} 
+            onPress={handleSelectRegister} 
             color={COLORS.PRIMARY_BLUE} 
           />
         </View>
