@@ -23,7 +23,8 @@ const SignUpBankScreen = () => {
 
   const handleContinue = () => {
     console.log('Inscription banque de sang:', formData);
-    // Navigation ou logique d'inscription
+    // Navigation vers le menu Bank
+    navigation.navigate('BankStack');
   };
 
   return (

@@ -1,10 +1,10 @@
 import { Text,StyleSheet, View, Image, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { userData } from "../constants/fakeUser";
+import { userData } from "../../constants/fakeUser";
 import dayjs from "dayjs";
-import { COLORS } from "../constants/colors";
+import { COLORS } from "../../constants/colors";
 import Ionicons from "react-native-vector-icons/Ionicons"
-import human from '../assets/human.png'
+import human from '../../assets/human.png'
 import { useNavigation } from "@react-navigation/native";
 
 export default function ProviderProfile() {

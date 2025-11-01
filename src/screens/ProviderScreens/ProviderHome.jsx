@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { View ,Text, Image, StyleSheet, FlatList,Pressable} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import logo2 from '../assets/logo_2.png'
-import adn from '../assets/adn.png'
-import { bloodAlerts } from "../constants/fakealert";
-import Alert from "../components/Alert";
-import { COLORS } from "../constants/colors";
+import logo2 from '../../assets/logo_2.png'
+import adn from '../../assets/adn.png'
+import { bloodAlerts } from "../../constants/fakealert";
+import Alert from "../../components/Alert";
+import { COLORS } from "../../constants/colors";
 import { useNavigation } from "@react-navigation/native";
 
 export default function ProviderHome() {

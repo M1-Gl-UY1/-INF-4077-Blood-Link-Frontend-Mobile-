@@ -1,6 +1,6 @@
 import {StyleSheet, View, Text,TextInput,Button} from "react-native"
-import {COLORS} from "../constants/colors" 
-import ButtonCustom from "../components/ButtonCustom"
+import {COLORS} from "../../constants/colors" 
+import ButtonCustom from "../../components/ButtonCustom"
 import { Picker } from "@react-native-picker/picker";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context"

@@ -29,7 +29,8 @@ const SignUpUserScreen = () => {
 
   const handleContinue = () => {
     console.log('Inscription donneur:', formData);
-    // Navigation ou logique d'inscription
+    // Navigation vers le menu Provider
+    navigation.navigate('ProviderStack');
   };
 
   return (

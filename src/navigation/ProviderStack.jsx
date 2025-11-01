@@ -1,8 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import ProviderHome from '../screens/ProviderHome';
-import ProviderGift from '../screens/ProviderGift';
-import ProviderProfile from '../screens/ProviderProfile';
+import ProviderHome from '../screens/ProviderScreens/ProviderHome';
+import ProviderGift from '../screens/ProviderScreens/ProviderGift';
+import ProviderProfile from '../screens/ProviderScreens/ProviderProfile';
 import ProviderLayout from './ProviderLayout';
 
 const Stack = createNativeStackNavigator();

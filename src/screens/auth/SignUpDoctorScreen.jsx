@@ -23,7 +23,8 @@ const SignUpDoctorScreen = () => {
 
   const handleContinue = () => {
     console.log('Inscription médecin:', formData);
-    // Navigation ou logique d'inscription
+    // Navigation vers le menu Doctor
+    navigation.navigate('DoctorStack');
   };
 
   return (
