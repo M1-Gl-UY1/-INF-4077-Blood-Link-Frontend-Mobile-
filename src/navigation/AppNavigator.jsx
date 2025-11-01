@@ -13,6 +13,10 @@ import DoctorStack from './DoctorStack';
 import BankStack from './BankStack';
 import AlertDetails from '../screens/AlertDetails';
 import UpdateProviderProfile from '../screens/ProviderScreens/UpdateProviderProfile';
+import EditProfilScreen from '../screens/BankScreens/Editprofilscreen';
+import ActiveAlertsScreen from '../screens/BankScreens/ActiveAlertsScreen';
+import AlertRequestsScreen from '../screens/BankScreens/AlertRequestsScreen';
+import AlertResponses from '../screens/BankScreens/AlertResponsesScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -35,6 +39,10 @@ const AppNavigator = () => {
         <Stack.Screen name="BankStack" component={BankStack} />
         <Stack.Screen name="AlertDetails" component={AlertDetails} />
         <Stack.Screen name="UpdateProviderProfile" component={UpdateProviderProfile} />
+        <Stack.Screen name="EditProfil" component={EditProfilScreen} />
+        <Stack.Screen name="ActiveAlerts" component={ActiveAlertsScreen} />
+        <Stack.Screen name="AlertRequests" component={AlertRequestsScreen} />
+        <Stack.Screen name="AlertResponses" component={AlertResponses} />
       </Stack.Navigator>
     </NavigationContainer>
   );

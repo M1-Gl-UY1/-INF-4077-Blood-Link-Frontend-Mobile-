@@ -1,21 +1,22 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import DoctorHome from '../screens/DoctorScreens/DoctorHome';
 import DoctorAppointments from '../screens/DoctorScreens/DoctorAppointments';
 import DoctorProfile from '../screens/DoctorScreens/DoctorProfile';
-import DoctorLayout from './DoctorLayout';
+import DoctorNavBar from '../components/DoctorNavBar';
 
-const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 const DoctorStack = () => {
   return (
-    <DoctorLayout>
-      <Stack.Navigator screenOptions={{ headerShown: false}}>
-        <Stack.Screen name="Doctor" component={DoctorHome} />
-        <Stack.Screen name="DoctorAppointments" component={DoctorAppointments} />
-        <Stack.Screen name="DoctorProfile" component={DoctorProfile} />
-      </Stack.Navigator>
-    </DoctorLayout>
+    <Tab.Navigator
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <DoctorNavBar {...props} />}
+    >
+      <Tab.Screen name="Doctor" component={DoctorHome} />
+      <Tab.Screen name="DoctorAppointments" component={DoctorAppointments} />
+      <Tab.Screen name="DoctorProfile" component={DoctorProfile} />
+    </Tab.Navigator>
   );
 };
 

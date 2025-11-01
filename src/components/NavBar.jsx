@@ -1,43 +1,50 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { useNavigation, useRoute, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { COLORS } from '../constants/colors';
 
-const NavBar = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-
-  // Récupère le nom de l'écran actuellement affiché dans le ProviderStack
-  const currentRouteName = getFocusedRouteNameFromRoute(route) ?? route.name;
-
-  const isActive = (name) => currentRouteName === name;
-
+const NavBar = ({ state, descriptors, navigation }) => {
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ProviderStack', { screen: 'Provider' })}>
-        <Ionicons
-          name="home"
-          size={24}
-          color={isActive('Provider') ? COLORS.PRIMARY_RED : 'gray'}
-        />
-      </TouchableOpacity>
+      {state.routes.map((route, index) => {
+        const isFocused = state.index === index;
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ProviderStack', { screen: 'ProviderGift' })}>
-        <Ionicons
-          name="trophy"
-          size={24}
-          color={isActive('ProviderGift') ? COLORS.PRIMARY_RED : 'gray'}
-        />
-      </TouchableOpacity>
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ProviderStack', { screen: 'ProviderProfile' })}>
-        <Ionicons
-          name="person"
-          size={24}
-          color={isActive('ProviderProfile') ? COLORS.PRIMARY_RED : 'gray'}
-        />
-      </TouchableOpacity>
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
+
+        // Définir les icônes selon le nom de la route
+        let iconName;
+        if (route.name === 'Provider') {
+          iconName = 'home';
+        } else if (route.name === 'ProviderGift') {
+          iconName = 'trophy';
+        } else if (route.name === 'ProviderProfile') {
+          iconName = 'person';
+        }
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            style={styles.button}
+            onPress={onPress}
+          >
+            <Ionicons
+              name={iconName}
+              size={24}
+              color={isFocused ? COLORS.PRIMARY_RED : 'gray'}
+            />
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };

@@ -5,7 +5,7 @@ import { COLORS } from '../../constants/colors';
 const DoctorProfile = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Hello</Text>
+      <Text style={styles.text}>Hello Doctor profil</Text>
     </View>
   );
 };

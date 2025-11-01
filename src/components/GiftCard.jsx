@@ -1,27 +1,33 @@
 import { Image, StyleSheet, View, Text } from "react-native";
 import adn_pattern from "../assets/adn_pattern.png";
 import { COLORS } from "../constants/colors";
+import Icon from 'react-native-vector-icons/FontAwesome';
 
-const Alert = ({ bloodAlert }) => {
+const GiftCard = ({ bloodGroup, rhesus, bankName, location }) => {
     return (
-        <View style={styles.alert}>
+        <View style={styles.card}>
             <View style={styles.bloodGroupBox}>
+                {/* Badge bookmark */}
+                <View style={styles.bookmarkBadge}>
+                    <Icon name="bookmark" size={24} color="#FFD700" />
+                </View>
+                
                 <View style={styles.bloodGroupBoxTextContainer}>
                     <Text style={[styles.bloodGroupBoxText, styles.textWhite]}>
-                        {bloodAlert.blood_group}
+                        {bloodGroup}
                     </Text>
                     <Text style={[styles.rhesus, styles.textWhite]}>
-                        {bloodAlert.rhesus}
+                        {rhesus}
                     </Text>
                 </View>
                 <Image source={adn_pattern} style={styles.adn_pattern} />
             </View>
             <View style={styles.bloodBoxText}>
                 <Text style={styles.bloodBoxName} numberOfLines={1}>
-                    {bloodAlert.bloodbank_name}
+                    {bankName}
                 </Text>
                 <Text style={styles.bloodBoxLocate} numberOfLines={1}>
-                    {bloodAlert.bloodbank_localisation}
+                    {location}
                 </Text>
             </View>
         </View>
@@ -29,9 +35,9 @@ const Alert = ({ bloodAlert }) => {
 };
 
 const styles = StyleSheet.create({
-    alert: {
+    card: {
         flex: 1,
-        aspectRatio: 180 / 170, // Garde les proportions parfaites
+        aspectRatio: 155 / 170,
         backgroundColor: 'white',
         borderRadius: 12,
         overflow: 'hidden',
@@ -46,12 +52,19 @@ const styles = StyleSheet.create({
     },
     bloodGroupBox: {
         backgroundColor: COLORS.PRIMARY_RED,
-        flex: 0.6, // 60% de la hauteur
+        flex: 0.6,
         padding: 12,
         flexDirection: 'row',
         overflow: 'hidden',
         justifyContent: 'space-between',
         alignItems: 'center',
+        position: 'relative',
+    },
+    bookmarkBadge: {
+        position: 'absolute',
+        top: 0,
+        left: 12,
+        zIndex: 10,
     },
     adn_pattern: {
         width: 40,
@@ -60,13 +73,15 @@ const styles = StyleSheet.create({
         right: 8,
         top: '50%',
         transform: [{ translateY: -20 }],
+        opacity: 0.3,
     },
     bloodGroupBoxTextContainer: {
         flexDirection: 'row',
         alignItems: 'flex-end',
+        marginTop: 8,
     },
     bloodGroupBoxText: {
-        fontSize: 48, // Réduit pour le responsive
+        fontSize: 48,
         fontWeight: '900',
         lineHeight: 45,
     },
@@ -77,7 +92,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     rhesus: {
-        fontSize: 24, // Réduit pour le responsive
+        fontSize: 24,
         fontWeight: '900',
         marginLeft: 4,
     },
@@ -96,4 +111,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default Alert;
+export default GiftCard;

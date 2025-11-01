@@ -1,43 +1,50 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { useNavigation, useRoute, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { COLORS } from '../constants/colors';
 
-const DoctorNavBar = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-
-  // Récupère le nom de l'écran actuellement affiché dans le DoctorStack
-  const currentRouteName = getFocusedRouteNameFromRoute(route) ?? route.name;
-
-  const isActive = (name) => currentRouteName === name;
-
+const DoctorNavBar = ({ state, descriptors, navigation }) => {
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('DoctorStack', { screen: 'Doctor' })}>
-        <Ionicons
-          name="home"
-          size={24}
-          color={isActive('Doctor') ? COLORS.PRIMARY_RED : 'gray'}
-        />
-      </TouchableOpacity>
+      {state.routes.map((route, index) => {
+        const isFocused = state.index === index;
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('DoctorStack', { screen: 'DoctorAppointments' })}>
-        <Ionicons
-          name="calendar"
-          size={24}
-          color={isActive('DoctorAppointments') ? COLORS.PRIMARY_RED : 'gray'}
-        />
-      </TouchableOpacity>
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('DoctorStack', { screen: 'DoctorProfile' })}>
-        <Ionicons
-          name="person"
-          size={24}
-          color={isActive('DoctorProfile') ? COLORS.PRIMARY_RED : 'gray'}
-        />
-      </TouchableOpacity>
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
+
+        // Définir les icônes selon le nom de la route
+        let iconName;
+        if (route.name === 'Doctor') {
+          iconName = 'home';
+        } else if (route.name === 'DoctorAppointments') {
+          iconName = 'calendar';
+        } else if (route.name === 'DoctorProfile') {
+          iconName = 'person';
+        }
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            style={styles.button}
+            onPress={onPress}
+          >
+            <Ionicons
+              name={iconName}
+              size={24}
+              color={isFocused ? COLORS.PRIMARY_RED : 'gray'}
+            />
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };

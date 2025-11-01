@@ -1,21 +1,22 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import BankHome from '../screens/BankScreens/BankHome';
 import BankInventory from '../screens/BankScreens/BankInventory';
 import BankProfile from '../screens/BankScreens/BankProfile';
-import BankLayout from './BankLayout';
+import BankNavBar from '../components/BankNavBar';
 
-const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 const BankStack = () => {
   return (
-    <BankLayout>
-      <Stack.Navigator screenOptions={{ headerShown: false}}>
-        <Stack.Screen name="Bank" component={BankHome} />
-        <Stack.Screen name="BankInventory" component={BankInventory} />
-        <Stack.Screen name="BankProfile" component={BankProfile} />
-      </Stack.Navigator>
-    </BankLayout>
+    <Tab.Navigator
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <BankNavBar {...props} />}
+    >
+      <Tab.Screen name="Bank" component={BankHome} />
+      <Tab.Screen name="BankInventory" component={BankInventory} />
+      <Tab.Screen name="BankProfile" component={BankProfile} />
+    </Tab.Navigator>
   );
 };
 

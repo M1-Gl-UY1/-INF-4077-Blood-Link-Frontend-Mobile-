@@ -1,43 +1,50 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { useNavigation, useRoute, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { COLORS } from '../constants/colors';
 
-const BankNavBar = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-
-  // Récupère le nom de l'écran actuellement affiché dans le BankStack
-  const currentRouteName = getFocusedRouteNameFromRoute(route) ?? route.name;
-
-  const isActive = (name) => currentRouteName === name;
-
+const BankNavBar = ({ state, descriptors, navigation }) => {
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BankStack', { screen: 'Bank' })}>
-        <Ionicons
-          name="home"
-          size={24}
-          color={isActive('Bank') ? COLORS.PRIMARY_RED : 'gray'}
-        />
-      </TouchableOpacity>
+      {state.routes.map((route, index) => {
+        const isFocused = state.index === index;
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BankStack', { screen: 'BankInventory' })}>
-        <Ionicons
-          name="flask"
-          size={24}
-          color={isActive('BankInventory') ? COLORS.PRIMARY_RED : 'gray'}
-        />
-      </TouchableOpacity>
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BankStack', { screen: 'BankProfile' })}>
-        <Ionicons
-          name="person"
-          size={24}
-          color={isActive('BankProfile') ? COLORS.PRIMARY_RED : 'gray'}
-        />
-      </TouchableOpacity>
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
+
+        // Définir les icônes selon le nom de la route
+        let iconName;
+        if (route.name === 'Bank') {
+          iconName = 'home';
+        } else if (route.name === 'BankInventory') {
+          iconName = 'flask';
+        } else if (route.name === 'BankProfile') {
+          iconName = 'person';
+        }
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            style={styles.button}
+            onPress={onPress}
+          >
+            <Ionicons
+              name={iconName}
+              size={24}
+              color={isFocused ? COLORS.PRIMARY_RED : 'gray'}
+            />
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };

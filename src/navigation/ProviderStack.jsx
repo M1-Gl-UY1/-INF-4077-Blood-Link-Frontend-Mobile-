@@ -1,21 +1,22 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import ProviderHome from '../screens/ProviderScreens/ProviderHome';
 import ProviderGift from '../screens/ProviderScreens/ProviderGift';
 import ProviderProfile from '../screens/ProviderScreens/ProviderProfile';
-import ProviderLayout from './ProviderLayout';
+import NavBar from '../components/NavBar';
 
-const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 const ProviderStack = () => {
   return (
-    <ProviderLayout>
-      <Stack.Navigator screenOptions={{ headerShown: false}}>
-        <Stack.Screen name="Provider" component={ProviderHome} />
-        <Stack.Screen name="ProviderGift" component={ProviderGift} />
-        <Stack.Screen name="ProviderProfile" component={ProviderProfile} />
-      </Stack.Navigator>
-    </ProviderLayout>
+    <Tab.Navigator
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <NavBar {...props} />}
+    >
+      <Tab.Screen name="Provider" component={ProviderHome} />
+      <Tab.Screen name="ProviderGift" component={ProviderGift} />
+      <Tab.Screen name="ProviderProfile" component={ProviderProfile} />
+    </Tab.Navigator>
   );
 };
 

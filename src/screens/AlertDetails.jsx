@@ -43,7 +43,6 @@ const styles = StyleSheet.create({
         width:'auto',
         height:'aut0',
         backgroundColor:'white',
-        borderRadius:12,
         overflow:'hidden'
     },
     bloodGroupBox:{
