@@ -7,10 +7,8 @@ import { API_ENDPOINTS } from '../config/api';
 import {
   LoginDTO,
   LoginResponse,
-  CreateProviderDTO,
-  CreateDoctorDTO,
-  CreateBloodBankDTO,
-  User,
+  RegisterDTO,
+  UserResponse,
 } from '../models';
 
 /**
@@ -19,45 +17,36 @@ import {
 export const authService = {
   /**
    * Connexion d'un utilisateur
+   * @param credentials - Email et mot de passe
+   * @returns Token JWT
    */
   login: async (credentials: LoginDTO): Promise<LoginResponse> => {
     return api.post<LoginResponse>(API_ENDPOINTS.LOGIN, credentials);
   },
 
   /**
-   * Inscription d'un Provider (Donneur de sang)
+   * Inscription d'un nouvel utilisateur
+   * @param data - Données d'inscription (username, email, password, role)
+   * @returns Informations de l'utilisateur créé
    */
-  registerProvider: async (data: CreateProviderDTO): Promise<User> => {
-    return api.post<User>(API_ENDPOINTS.REGISTER, {
-      ...data,
-      role: 'provider',
-    });
+  register: async (data: RegisterDTO): Promise<UserResponse> => {
+    return api.post<UserResponse>(API_ENDPOINTS.REGISTER, data);
   },
 
   /**
-   * Inscription d'un Doctor (Médecin)
+   * Récupération des informations de l'utilisateur connecté
+   * @param token - Token JWT
+   * @returns Informations de l'utilisateur
    */
-  registerDoctor: async (data: CreateDoctorDTO): Promise<User> => {
-    return api.post<User>(API_ENDPOINTS.REGISTER, {
-      ...data,
-      role: 'doctor',
-    });
-  },
-
-  /**
-   * Inscription d'une BloodBank (Banque de sang)
-   */
-  registerBloodBank: async (data: CreateBloodBankDTO): Promise<User> => {
-    return api.post<User>(API_ENDPOINTS.REGISTER, {
-      ...data,
-      role: 'blood_bank',
-    });
+  getCurrentUser: async (token: string): Promise<UserResponse> => {
+    return api.post<UserResponse>(API_ENDPOINTS.USERS, { token });
   },
 
   /**
    * Déconnexion d'un utilisateur
+   * @param token - Token JWT
    */
-  logout: async (token: string): Promise<void> => {
-    return api.post<void>(API_ENDPOINTS.LOGOUT, {}, token);
+  logout: async (token: string): Promise<{ message: string }> => {
+    return api.post<{ message: string }>(API_ENDPOINTS.LOGOUT, {}, token);
   },
 };

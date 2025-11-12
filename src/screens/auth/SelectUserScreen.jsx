@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../../constants/colors';
 import BackgroundTop from '../../assets/image_1.svg';
@@ -29,6 +29,8 @@ const SelectUserScreen = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.PRIMARY_RED} />
+
       {/* Image de fond supérieure SVG */}
       <View style={styles.topBackground}>
         <BackgroundTop 

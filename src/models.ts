@@ -134,25 +134,37 @@ export interface AlertReceiveSerializers {
 
 export type BloodGroup = 'A' | 'B' | 'AB' | 'O';
 export type Rhesus = '+' | '-';
+export type RhesusAPI = 'POS' | 'NEG';
 export type Sexe = 'M' | 'F';
-export type Role = 'provider' | 'doctor' | 'blood_bank';
+export type Role = 'provider' | 'doctor' | 'bank';
 export type RequestStatus = 'pending' | 'approved' | 'rejected';
-export type AlertStatus = 'sent' | 'received' | 'read' | 'responded';
+export type AlertStatus = 'PENDING' | 'SENT' | 'RECEIVED' | 'IN_PROGRESS' | 'RESOLVED' | 'CANCELLED' | 'FAILED';
+export type AlertResponseStatus = 'PENDING' | 'RESPONDED' | 'COMPLETED' | 'CANCELLED';
+export type Grade = 'INT' | 'RES' | 'ASS' | 'SPC' | 'CHS' | 'PRF';
+export type Speciality = 'GP' | 'CD' | 'NE' | 'OR' | 'PD';
 
 // ============================================
 // TYPES POUR LES REQUÊTES API (DTO)
 // ============================================
 
 /**
- * DTO pour la création d'un utilisateur Provider
+ * DTO de base pour l'inscription (endpoint /registers/)
  */
-export interface CreateProviderDTO {
+export interface RegisterDTO {
   username: string;
   email: string;
   password: string;
+  role: Role;
+}
+
+/**
+ * DTO pour la création/mise à jour d'un profil Provider
+ */
+export interface CreateProviderDTO {
   name: string;
   sexe: Sexe;
   date_birth?: string;
+  email: string;
   phone_number: string;
   blood_group: BloodGroup;
   rhesus: Rhesus;
@@ -161,25 +173,19 @@ export interface CreateProviderDTO {
 }
 
 /**
- * DTO pour la création d'un utilisateur Doctor
+ * DTO pour la création/mise à jour d'un profil Doctor
  */
 export interface CreateDoctorDTO {
-  username: string;
-  email: string;
-  password: string;
   name: string;
-  grade: string;
-  speciality: string;
-  bank_id: string;
+  grade: Grade;
+  speciality: Speciality;
+  blood_bank?: string;
 }
 
 /**
- * DTO pour la création d'un utilisateur BloodBank
+ * DTO pour la création/mise à jour d'un profil BloodBank
  */
 export interface CreateBloodBankDTO {
-  username: string;
-  email: string;
-  password: string;
   name: string;
   location: string;
 }
@@ -208,7 +214,7 @@ export interface CreateBloodBagDTO {
  * DTO pour la connexion
  */
 export interface LoginDTO {
-  username: string;
+  email: string;
   password: string;
 }
 
@@ -216,7 +222,15 @@ export interface LoginDTO {
  * Réponse de connexion
  */
 export interface LoginResponse {
-  token: string;
-  user: User;
+  jwt: string;
+}
+
+/**
+ * Réponse de récupération des informations utilisateur
+ */
+export interface UserResponse {
+  id: string;
+  username: string;
+  email: string;
   role: Role;
 }

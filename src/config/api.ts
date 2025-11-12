@@ -6,46 +6,46 @@
 // URL de base du backend
 export const API_BASE_URL = 'https://inf-4077-blood-link-backend.onrender.com';
 
-// Endpoints de l'API
+// Endpoints de l'API (selon documentation backend)
 export const API_ENDPOINTS = {
   // Authentification
-  LOGIN: '/apiBloodlink/login',
-  REGISTER: '/apiBloodlink/registers',
-  LOGOUT: '/apiBloodlink/logout',
+  REGISTER: '/apiBloodlink/registers/',
+  LOGIN: '/apiBloodlink/logins/',
+  LOGOUT: '/apiBloodlink/logout/',
+  USERS: '/apiBloodlink/users/',
 
   // Provider (Donneur de sang)
-  PROVIDERS: '/apiBloodlink/providers',
-  PROVIDER_DETAIL: (id: string) => `/apiBloodlink/providers/${id}`,
-  PROVIDER_PROFILE: '/apiBloodlink/providers/profile',
+  PROVIDERS: '/apiBloodlink/providers/',
+  PROVIDER_DETAIL: (id: string) => `/apiBloodlink/providers/${id}/`,
 
   // Doctor (Médecin)
-  DOCTORS: '/apiBloodlink/doctors',
-  DOCTOR_DETAIL: (id: string) => `/apiBloodlink/doctors/${id}`,
-  DOCTOR_PROFILE: '/apiBloodlink/doctors/profile',
+  DOCTORS: '/apiBloodlink/doctors/',
+  DOCTOR_DETAIL: (id: string) => `/apiBloodlink/doctors/${id}/`,
 
   // BloodBank (Banque de sang)
-  BLOOD_BANKS: '/apiBloodlink/blood-banks',
-  BLOOD_BANK_DETAIL: (id: string) => `/apiBloodlink/blood-banks/${id}`,
-  BLOOD_BANK_PROFILE: '/apiBloodlink/blood-banks/profile',
+  BLOOD_BANKS: '/apiBloodlink/bloodBanks/',
+  BLOOD_BANK_DETAIL: (id: string) => `/apiBloodlink/bloodBanks/${id}/`,
 
   // BloodRequest (Demande de sang)
-  BLOOD_REQUESTS: '/apiBloodlink/blood-requests',
-  BLOOD_REQUEST_DETAIL: (id: string) => `/apiBloodlink/blood-requests/${id}`,
-  CREATE_BLOOD_REQUEST: '/apiBloodlink/blood-requests/create',
+  BLOOD_REQUESTS: '/apiBloodlink/bloodRequests/',
+  BLOOD_REQUEST_DETAIL: (id: string) => `/apiBloodlink/bloodRequests/${id}/`,
+  VALIDATE_BLOOD_REQUEST: (id: string) => `/apiBloodlink/requests/${id}/validate/`,
 
   // BloodBag (Poche de sang)
-  BLOOD_BAGS: '/apiBloodlink/blood-bags',
-  BLOOD_BAG_DETAIL: (id: string) => `/apiBloodlink/blood-bags/${id}`,
-  CREATE_BLOOD_BAG: '/apiBloodlink/blood-bags/create',
+  BLOOD_BAGS: '/apiBloodlink/blood_bags/',
+  BLOOD_BAG_DETAIL: (id: string) => `/apiBloodlink/blood_bags/${id}/`,
 
   // BloodTransaction (Transaction de sang)
-  BLOOD_TRANSACTIONS: '/apiBloodlink/blood-transactions',
-  BLOOD_TRANSACTION_DETAIL: (id: string) => `/apiBloodlink/blood-transactions/${id}`,
+  BLOOD_TRANSACTIONS_GET: '/apiBloodlink/getbloodTransactions/',
+  BLOOD_TRANSACTIONS_POST: '/apiBloodlink/postbloodTransactions/',
+  BLOOD_TRANSACTION_DETAIL: (id: string) => `/apiBloodlink/bloodTransactions/${id}/`,
 
   // Alerts (Alertes)
-  ALERTS: '/apiBloodlink/alerts',
-  ALERT_DETAIL: (id: string) => `/apiBloodlink/alerts/${id}`,
-  ALERT_RECEIVE: '/apiBloodlink/alerts/receive',
+  ALERTS: '/apiBloodlink/alerts/',
+  ALERT_DETAIL: (id: string) => `/apiBloodlink/alerts/${id}/`,
+  ALERT_REPLY: (id: string) => `/apiBloodlink/alerts/${id}/reply/`,
+  RECEIVE_ALERTS: '/apiBloodlink/receiveAlertes/',
+  RECEIVE_ALERT_DETAIL: (id: string) => `/apiBloodlink/receiveAlertes/${id}/`,
 };
 
 // Configuration des headers par défaut

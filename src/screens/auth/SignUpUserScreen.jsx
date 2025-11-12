@@ -1,71 +1,193 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  ActivityIndicator,
+  Platform,
+  StatusBar,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { COLORS } from '../../constants/colors';
 import BackgroundTop from '../../assets/image_1.svg';
 import BackgroundBottom from '../../assets/image_2.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ButtonCustom from '../../components/ButtonCustom';
+import PickerField from '../../components/PickerField';
+import { useAuth } from '../../contexts/AuthContext';
+import { ApiError } from '../../services/apiService';
+import { providerProfileService } from '../../services/profileService';
+import { findProviderProfileId } from '../../utils/profileHelpers';
+import { GENDER_OPTIONS, BLOOD_GROUPS, RHESUS_OPTIONS, RHESUS_API_MAP } from '../../constants/enums';
 
 const SignUpUserScreen = () => {
   const navigation = useNavigation();
+  const { register } = useAuth();
+
   const [formData, setFormData] = useState({
     nom: '',
     email: '',
-    sexe: 'Masculin',
+    sexe: 'M',
     groupeSanguin: 'A',
-    rhesus: 'Positif',
-    naissance: '',
+    rhesus: '+',
+    naissance: new Date(),
     telephone: '',
-    localisation: '',
     password: '',
     confirmPassword: '',
-    dossierMedical: null,
   });
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
+    setError('');
   };
 
-  const handleContinue = () => {
-    console.log('Inscription donneur:', formData);
-    // Navigation vers le menu Provider
-    navigation.navigate('ProviderStack');
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setFormData({ ...formData, naissance: selectedDate });
+    }
+  };
+
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatDisplayDate = (date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const validateForm = () => {
+    if (!formData.nom.trim()) {
+      setError('Le nom est requis');
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Email invalide');
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères');
+      return false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      return false;
+    }
+
+    if (!formData.telephone.trim()) {
+      setError('Le numéro de téléphone est requis');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleContinue = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      // Étape 1 : Inscription via /registers/
+      await register({
+        username: formData.nom.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        role: 'provider',
+      });
+
+      // Étape 2 : L'AuthContext gère le login automatiquement
+      // On doit maintenant mettre à jour le profil Provider
+      // On récupère le token et user_id depuis le contexte
+      const token = await import('../../utils/storage').then((m) => m.getToken());
+      const user = await import('../../utils/storage').then((m) => m.getUser());
+
+      if (token && user) {
+        // Trouver l'ID du profil provider
+        const providerId = await findProviderProfileId(user.id, token);
+
+        if (providerId) {
+          // Mettre à jour le profil avec toutes les informations
+          await providerProfileService.updateProfile(
+            providerId,
+            {
+              name: formData.nom.trim(),
+              sexe: formData.sexe,
+              date_birth: formatDate(formData.naissance),
+              email: formData.email.trim(),
+              phone_number: formData.telephone.trim(),
+              blood_group: formData.groupeSanguin,
+              rhesus: formData.rhesus,
+            },
+            token
+          );
+        }
+      }
+
+      // La navigation sera gérée automatiquement par AppNavigator
+    } catch (err) {
+      console.error('Erreur d\'inscription:', err);
+
+      if (err instanceof ApiError) {
+        if (err.statusCode === 400) {
+          setError('Cet email est déjà utilisé');
+        } else {
+          setError(err.message || 'Une erreur est survenue lors de l\'inscription');
+        }
+      } else {
+        setError('Impossible de s\'inscrire. Vérifiez votre connexion internet.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.PRIMARY_RED} />
+
       {/* Image de fond supérieure SVG */}
       <View style={styles.topBackground}>
-        <BackgroundTop 
-          width="100%" 
-          height="100%" 
-          preserveAspectRatio="xMidYMid slice"
-        />
+        <BackgroundTop width="100%" height="100%" preserveAspectRatio="xMidYMid slice" />
       </View>
-      
+
       {/* Image de fond inférieure SVG */}
       <View style={styles.bottomBackground}>
-        <BackgroundBottom 
-          width="100%" 
-          height="100%" 
-          preserveAspectRatio="xMidYMid slice"
-        />
+        <BackgroundBottom width="100%" height="100%" preserveAspectRatio="xMidYMid slice" />
       </View>
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color={COLORS.BLACK} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Inscription</Text>
+        <Text style={styles.headerTitle}>Inscription Donneur</Text>
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -73,14 +195,14 @@ const SignUpUserScreen = () => {
         {/* Logo et titre */}
         <View style={styles.logoContainer}>
           <Image
-              source={require('../../assets/logo_bloodlink_sfond.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            source={require('../../assets/logo_bloodlink_sfond.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
 
         <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>Bienvennue sur</Text>
+          <Text style={styles.welcomeText}>Bienvenue sur</Text>
           <View style={styles.titleContainer}>
             <Text style={styles.titleRed}>Blood</Text>
             <Text style={styles.titleBlack}>Link !</Text>
@@ -89,15 +211,24 @@ const SignUpUserScreen = () => {
 
         {/* Formulaire */}
         <View style={styles.formContainer}>
+          {/* Message d'erreur */}
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Icon name="alert-circle" size={20} color={COLORS.PRIMARY_RED} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
+
           {/* Nom utilisateur */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nom utilisateur *</Text>
+            <Text style={styles.label}>Nom complet *</Text>
             <TextInput
               style={styles.input}
               placeholder="Nom"
               placeholderTextColor={COLORS.GRAY_LIGHT}
               value={formData.nom}
               onChangeText={(value) => handleInputChange('nom', value)}
+              editable={!loading}
             />
           </View>
 
@@ -112,47 +243,54 @@ const SignUpUserScreen = () => {
               onChangeText={(value) => handleInputChange('email', value)}
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!loading}
             />
           </View>
 
           {/* Ligne: Sexe, Groupe sanguin, Rhésus */}
           <View style={styles.rowContainer}>
             <View style={[styles.inputGroup, styles.smallInput]}>
-              <Text style={styles.label}>Sexe</Text>
-              <View style={styles.pickerContainer}>
-                <Text style={styles.pickerText}>{formData.sexe}</Text>
-                <Icon name="chevron-down" size={20} color={COLORS.BLACK} />
-              </View>
+              <PickerField
+                label="Sexe *"
+                value={formData.sexe}
+                options={GENDER_OPTIONS}
+                onValueChange={(value) => handleInputChange('sexe', value)}
+                disabled={loading}
+              />
             </View>
 
             <View style={[styles.inputGroup, styles.smallInput]}>
-              <Text style={styles.label}>Groupe sanguin</Text>
-              <View style={styles.pickerContainer}>
-                <Text style={styles.pickerText}>{formData.groupeSanguin}</Text>
-                <Icon name="chevron-down" size={20} color={COLORS.BLACK} />
-              </View>
+              <PickerField
+                label="Groupe *"
+                value={formData.groupeSanguin}
+                options={BLOOD_GROUPS}
+                onValueChange={(value) => handleInputChange('groupeSanguin', value)}
+                disabled={loading}
+              />
             </View>
 
             <View style={[styles.inputGroup, styles.smallInput]}>
-              <Text style={styles.label}>Rhésus</Text>
-              <View style={styles.pickerContainer}>
-                <Text style={styles.pickerText}>{formData.rhesus}</Text>
-                <Icon name="chevron-down" size={20} color={COLORS.BLACK} />
-              </View>
+              <PickerField
+                label="Rhésus *"
+                value={formData.rhesus}
+                options={RHESUS_OPTIONS}
+                onValueChange={(value) => handleInputChange('rhesus', value)}
+                disabled={loading}
+              />
             </View>
           </View>
 
-          {/* Ligne: Naissance et Téléphone */}
+          {/* Ligne: Date de naissance et Téléphone */}
           <View style={styles.rowContainer}>
             <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Naissance *</Text>
-              <TextInput
+              <Text style={styles.label}>Date de naissance *</Text>
+              <TouchableOpacity
                 style={styles.input}
-                placeholder="mm/dd/yyyy"
-                placeholderTextColor={COLORS.GRAY_LIGHT}
-                value={formData.naissance}
-                onChangeText={(value) => handleInputChange('naissance', value)}
-              />
+                onPress={() => !loading && setShowDatePicker(true)}
+                disabled={loading}
+              >
+                <Text style={styles.dateText}>{formatDisplayDate(formData.naissance)}</Text>
+              </TouchableOpacity>
             </View>
 
             <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -165,6 +303,7 @@ const SignUpUserScreen = () => {
                   value={formData.telephone}
                   onChangeText={(value) => handleInputChange('telephone', value)}
                   keyboardType="phone-pad"
+                  editable={!loading}
                 />
                 <View style={styles.flagContainer}>
                   <Text style={styles.flag}>🇨🇲</Text>
@@ -183,6 +322,7 @@ const SignUpUserScreen = () => {
               value={formData.password}
               onChangeText={(value) => handleInputChange('password', value)}
               secureTextEntry
+              editable={!loading}
             />
           </View>
 
@@ -196,23 +336,15 @@ const SignUpUserScreen = () => {
               value={formData.confirmPassword}
               onChangeText={(value) => handleInputChange('confirmPassword', value)}
               secureTextEntry
+              editable={!loading}
             />
-          </View>
-
-          {/* Dossier médical */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Dossier médical</Text>
-            <TouchableOpacity style={styles.uploadContainer}>
-              <Icon name="document" size={40} color={COLORS.PRIMARY_RED} />
-            </TouchableOpacity>
           </View>
 
           {/* Conditions */}
           <View style={styles.conditionsContainer}>
             <Text style={styles.conditionsText}>
               En continuant vous acceptez nos{' '}
-              <Text style={styles.conditionsLink}>conditions d'utilisation</Text>
-              {' '}et{' '}
+              <Text style={styles.conditionsLink}>conditions d'utilisation</Text> et{' '}
               <Text style={styles.conditionsLink}>politique de confidentialité</Text>.
             </Text>
           </View>
@@ -220,13 +352,30 @@ const SignUpUserScreen = () => {
 
         {/* Bouton continuer */}
         <View style={styles.buttonContainer}>
-          <ButtonCustom 
-            title="Continuer" 
-            onPress={handleContinue} 
-            color={COLORS.PRIMARY_RED}
-          />
+          {loading ? (
+            <ActivityIndicator size="large" color={COLORS.PRIMARY_RED} />
+          ) : (
+            <ButtonCustom
+              title="Continuer"
+              onPress={handleContinue}
+              color={COLORS.PRIMARY_RED}
+              disabled={loading}
+            />
+          )}
         </View>
       </ScrollView>
+
+      {/* DateTimePicker */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={formData.naissance}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDateChange}
+          maximumDate={new Date()}
+          minimumDate={new Date(1920, 0, 1)}
+        />
+      )}
     </View>
   );
 };
@@ -270,7 +419,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.BLACK,
   },
@@ -290,12 +439,16 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 10,
   },
+  logo: {
+    width: 60,
+    height: 60,
+  },
   welcomeContainer: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 24,
   },
   welcomeText: {
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.BLACK,
     fontWeight: 'bold',
     marginBottom: 5,
@@ -304,12 +457,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   titleRed: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '900',
     color: COLORS.PRIMARY_RED,
   },
   titleBlack: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '900',
     color: COLORS.BLACK,
   },
@@ -334,29 +487,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.BLACK,
     backgroundColor: COLORS.WHITE,
+    justifyContent: 'center',
+  },
+  dateText: {
+    fontSize: 14,
+    color: COLORS.BLACK,
   },
   rowContainer: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 0,
   },
   smallInput: {
     flex: 1,
-  },
-  pickerContainer: {
-    height: 48,
-    borderWidth: 1.5,
-    borderColor: COLORS.GRAY_LIGHT,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: COLORS.WHITE,
-  },
-  pickerText: {
-    fontSize: 14,
-    color: COLORS.BLACK,
   },
   phoneContainer: {
     position: 'relative',
@@ -389,23 +532,14 @@ const styles = StyleSheet.create({
   flag: {
     fontSize: 18,
   },
-  uploadContainer: {
-    height: 80,
-    borderWidth: 1.5,
-    borderColor: COLORS.GRAY_LIGHT,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.WHITE,
-  },
   conditionsContainer: {
     marginTop: 10,
   },
   conditionsText: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.BLACK,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 16,
   },
   conditionsLink: {
     color: COLORS.PRIMARY_RED,
@@ -414,6 +548,23 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     alignItems: 'center',
+    marginTop: 10,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F5',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FED7D7',
+  },
+  errorText: {
+    color: COLORS.PRIMARY_RED,
+    fontSize: 13,
+    marginLeft: 8,
+    flex: 1,
   },
 });
 

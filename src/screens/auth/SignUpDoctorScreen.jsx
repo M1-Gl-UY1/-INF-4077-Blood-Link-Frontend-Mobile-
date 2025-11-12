@@ -1,80 +1,206 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  ActivityIndicator,
+  StatusBar,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../../constants/colors';
 import BackgroundTop from '../../assets/image_1.svg';
 import BackgroundBottom from '../../assets/image_2.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ButtonCustom from '../../components/ButtonCustom';
+import PickerField from '../../components/PickerField';
+import { useAuth } from '../../contexts/AuthContext';
+import { ApiError } from '../../services/apiService';
+import { doctorProfileService, bloodBankProfileService } from '../../services/profileService';
+import { findDoctorProfileId } from '../../utils/profileHelpers';
+import { DOCTOR_GRADES, DOCTOR_SPECIALTIES } from '../../constants/enums';
 
 const SignUpDoctorScreen = () => {
   const navigation = useNavigation();
+  const { register } = useAuth();
+
   const [formData, setFormData] = useState({
     nom: '',
     email: '',
-    grade: 'Generaliste',
+    grade: 'INT',
+    speciality: 'GP',
+    bloodBankId: '',
     password: '',
     confirmPassword: '',
   });
 
-  const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+  const [bloodBanks, setBloodBanks] = useState([]);
+  const [loadingBanks, setLoadingBanks] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Charger la liste des banques de sang au montage du composant
+  useEffect(() => {
+    loadBloodBanks();
+  }, []);
+
+  const loadBloodBanks = async () => {
+    try {
+      setLoadingBanks(true);
+      const banks = await bloodBankProfileService.getAllBloodBanks();
+      const bankOptions = banks.map((bank) => ({
+        value: bank.id,
+        label: bank.name,
+      }));
+      setBloodBanks(bankOptions);
+
+      // Sélectionner la première banque par défaut si disponible
+      if (bankOptions.length > 0) {
+        setFormData({ ...formData, bloodBankId: bankOptions[0].value });
+      }
+    } catch (err) {
+      console.error('Erreur lors du chargement des banques:', err);
+      setError('Impossible de charger la liste des banques de sang');
+    } finally {
+      setLoadingBanks(false);
+    }
   };
 
-  const handleContinue = () => {
-    console.log('Inscription médecin:', formData);
-    // Navigation vers le menu Doctor
-    navigation.navigate('DoctorStack');
+  const handleInputChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+    setError('');
+  };
+
+  const validateForm = () => {
+    if (!formData.nom.trim()) {
+      setError('Le nom est requis');
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Email invalide');
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères');
+      return false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      return false;
+    }
+
+    if (!formData.bloodBankId) {
+      setError('Veuillez sélectionner une banque de sang');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleContinue = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      // Étape 1 : Inscription via /registers/
+      await register({
+        username: formData.nom.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        role: 'doctor',
+      });
+
+      // Étape 2 : Mettre à jour le profil Doctor
+      const token = await import('../../utils/storage').then((m) => m.getToken());
+      const user = await import('../../utils/storage').then((m) => m.getUser());
+
+      if (token && user) {
+        // Trouver l'ID du profil doctor
+        const doctorId = await findDoctorProfileId(user.id, token);
+
+        if (doctorId) {
+          // Mettre à jour le profil avec toutes les informations
+          await doctorProfileService.updateProfile(
+            doctorId,
+            {
+              name: formData.nom.trim(),
+              grade: formData.grade,
+              speciality: formData.speciality,
+              blood_bank: formData.bloodBankId,
+            },
+            token
+          );
+        }
+      }
+
+      // La navigation sera gérée automatiquement par AppNavigator
+    } catch (err) {
+      console.error('Erreur d\'inscription:', err);
+
+      if (err instanceof ApiError) {
+        if (err.statusCode === 400) {
+          setError('Cet email est déjà utilisé');
+        } else {
+          setError(err.message || 'Une erreur est survenue lors de l\'inscription');
+        }
+      } else {
+        setError('Impossible de s\'inscrire. Vérifiez votre connexion internet.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.PRIMARY_RED} />
+
       {/* Image de fond supérieure SVG */}
       <View style={styles.topBackground}>
-        <BackgroundTop 
-          width="100%" 
-          height="100%" 
-          preserveAspectRatio="xMidYMid slice"
-        />
+        <BackgroundTop width="100%" height="100%" preserveAspectRatio="xMidYMid slice" />
       </View>
-      
+
       {/* Image de fond inférieure SVG */}
       <View style={styles.bottomBackground}>
-        <BackgroundBottom 
-          width="100%" 
-          height="100%" 
-          preserveAspectRatio="xMidYMid slice"
-        />
+        <BackgroundBottom width="100%" height="100%" preserveAspectRatio="xMidYMid slice" />
       </View>
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color={COLORS.BLACK} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Inscription</Text>
+        <Text style={styles.headerTitle}>Inscription Médecin</Text>
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Logo et titre */}
         <View style={styles.logoContainer}>
-            <Image
-                source={require('../../assets/logo_bloodlink_sfond.png')}
-                style={styles.logo}
-                resizeMode="contain"
-            />
+          <Image
+            source={require('../../assets/logo_bloodlink_sfond.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
 
         <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>Bienvennue sur</Text>
+          <Text style={styles.welcomeText}>Bienvenue sur</Text>
           <View style={styles.titleContainer}>
             <Text style={styles.titleRed}>Blood</Text>
             <Text style={styles.titleBlack}>Link !</Text>
@@ -83,15 +209,32 @@ const SignUpDoctorScreen = () => {
 
         {/* Formulaire */}
         <View style={styles.formContainer}>
+          {/* Message d'erreur */}
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Icon name="alert-circle" size={20} color={COLORS.PRIMARY_RED} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
+
+          {/* Loading des banques */}
+          {loadingBanks && (
+            <View style={styles.loadingBanksContainer}>
+              <ActivityIndicator size="small" color={COLORS.PRIMARY_RED} />
+              <Text style={styles.loadingBanksText}>Chargement des banques de sang...</Text>
+            </View>
+          )}
+
           {/* Nom utilisateur */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nom utilisateur *</Text>
+            <Text style={styles.label}>Nom complet *</Text>
             <TextInput
               style={styles.input}
               placeholder="Nom"
               placeholderTextColor={COLORS.GRAY_LIGHT}
               value={formData.nom}
               onChangeText={(value) => handleInputChange('nom', value)}
+              editable={!loading}
             />
           </View>
 
@@ -106,17 +249,39 @@ const SignUpDoctorScreen = () => {
               onChangeText={(value) => handleInputChange('email', value)}
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!loading}
             />
           </View>
 
           {/* Grade */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Grade</Text>
-            <View style={styles.pickerContainer}>
-              <Text style={styles.pickerText}>{formData.grade}</Text>
-              <Icon name="chevron-down" size={20} color={COLORS.BLACK} />
-            </View>
-          </View>
+          <PickerField
+            label="Grade *"
+            value={formData.grade}
+            options={DOCTOR_GRADES}
+            onValueChange={(value) => handleInputChange('grade', value)}
+            disabled={loading}
+          />
+
+          {/* Spécialité */}
+          <PickerField
+            label="Spécialité *"
+            value={formData.speciality}
+            options={DOCTOR_SPECIALTIES}
+            onValueChange={(value) => handleInputChange('speciality', value)}
+            disabled={loading}
+          />
+
+          {/* Banque de sang */}
+          {!loadingBanks && bloodBanks.length > 0 && (
+            <PickerField
+              label="Banque de sang *"
+              value={formData.bloodBankId}
+              options={bloodBanks}
+              onValueChange={(value) => handleInputChange('bloodBankId', value)}
+              placeholder="Sélectionnez une banque"
+              disabled={loading}
+            />
+          )}
 
           {/* Mot de passe */}
           <View style={styles.inputGroup}>
@@ -128,6 +293,7 @@ const SignUpDoctorScreen = () => {
               value={formData.password}
               onChangeText={(value) => handleInputChange('password', value)}
               secureTextEntry
+              editable={!loading}
             />
           </View>
 
@@ -141,6 +307,7 @@ const SignUpDoctorScreen = () => {
               value={formData.confirmPassword}
               onChangeText={(value) => handleInputChange('confirmPassword', value)}
               secureTextEntry
+              editable={!loading}
             />
           </View>
 
@@ -148,8 +315,7 @@ const SignUpDoctorScreen = () => {
           <View style={styles.conditionsContainer}>
             <Text style={styles.conditionsText}>
               En continuant vous acceptez nos{' '}
-              <Text style={styles.conditionsLink}>conditions d'utilisation</Text>
-              {' '}et{' '}
+              <Text style={styles.conditionsLink}>conditions d'utilisation</Text> et{' '}
               <Text style={styles.conditionsLink}>politique de confidentialité</Text>.
             </Text>
           </View>
@@ -157,11 +323,16 @@ const SignUpDoctorScreen = () => {
 
         {/* Bouton continuer */}
         <View style={styles.buttonContainer}>
-          <ButtonCustom 
-            title="Continuer" 
-            onPress={handleContinue} 
-            color={COLORS.PRIMARY_RED}
-          />
+          {loading ? (
+            <ActivityIndicator size="large" color={COLORS.PRIMARY_RED} />
+          ) : (
+            <ButtonCustom
+              title="Continuer"
+              onPress={handleContinue}
+              color={COLORS.PRIMARY_RED}
+              disabled={loading || loadingBanks}
+            />
+          )}
         </View>
       </ScrollView>
     </View>
@@ -207,7 +378,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.BLACK,
   },
@@ -227,12 +398,16 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 15,
   },
+  logo: {
+    width: 70,
+    height: 70,
+  },
   welcomeContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 30,
   },
   welcomeText: {
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.BLACK,
     fontWeight: 'bold',
     marginBottom: 5,
@@ -241,17 +416,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   titleRed: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
     color: COLORS.PRIMARY_RED,
   },
   titleBlack: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
     color: COLORS.BLACK,
   },
   formContainer: {
-    marginBottom: 30,
+    marginBottom: 20,
   },
   inputGroup: {
     marginBottom: 16,
@@ -272,29 +447,27 @@ const styles = StyleSheet.create({
     color: COLORS.BLACK,
     backgroundColor: COLORS.WHITE,
   },
-  pickerContainer: {
-    height: 50,
-    borderWidth: 1.5,
-    borderColor: COLORS.GRAY_LIGHT,
-    borderRadius: 10,
-    paddingHorizontal: 16,
+  loadingBanksContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.WHITE,
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    marginBottom: 16,
   },
-  pickerText: {
-    fontSize: 14,
+  loadingBanksText: {
+    marginLeft: 10,
+    fontSize: 13,
     color: COLORS.BLACK,
   },
   conditionsContainer: {
-    marginTop: 10,
+    marginTop: 16,
   },
   conditionsText: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.BLACK,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 16,
   },
   conditionsLink: {
     color: COLORS.PRIMARY_RED,
@@ -303,6 +476,23 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     alignItems: 'center',
+    marginTop: 10,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F5',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FED7D7',
+  },
+  errorText: {
+    color: COLORS.PRIMARY_RED,
+    fontSize: 13,
+    marginLeft: 8,
+    flex: 1,
   },
 });
 

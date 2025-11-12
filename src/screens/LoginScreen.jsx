@@ -1,26 +1,70 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, Alert, ActivityIndicator, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/colors';
 import BackgroundTop from '../assets/image_1.svg';
 import BackgroundBottom from '../assets/image_2.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ButtonCustom from '../components/ButtonCustom';
+import { useAuth } from '../contexts/AuthContext';
+import { ApiError } from '../services/apiService';
 
 const LoginScreen = () => {
   const navigation = useNavigation();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = () => {
-    // Logique de connexion ici
-    console.log('Login avec:', email, password);
-    navigation.navigate('ProviderStack', { screen: 'Provider' });
+  const handleLogin = async () => {
+    // Validation des champs
+    if (!email.trim() || !password.trim()) {
+      setError('Veuillez remplir tous les champs');
+      return;
+    }
 
+    // Validation de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Veuillez entrer un email valide');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      // Appel au service de connexion via le contexte
+      await login({
+        email: email.trim(),
+        password: password.trim(),
+      });
+
+      // La navigation sera gérée par AppNavigator en fonction du rôle
+    } catch (err) {
+      console.error('Erreur de connexion:', err);
+
+      if (err instanceof ApiError) {
+        if (err.statusCode === 401) {
+          setError('Email ou mot de passe incorrect');
+        } else if (err.statusCode === 404) {
+          setError('Utilisateur non trouvé');
+        } else {
+          setError(err.message || 'Une erreur est survenue lors de la connexion');
+        }
+      } else {
+        setError('Impossible de se connecter. Vérifiez votre connexion internet.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.PRIMARY_RED} />
+
       {/* Image de fond supérieure SVG */}
       <View style={styles.topBackground}>
         <BackgroundTop 
@@ -74,17 +118,29 @@ const LoginScreen = () => {
 
           {/* Formulaire */}
           <View style={styles.formContainer}>
+            {/* Message d'erreur */}
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Icon name="alert-circle" size={20} color={COLORS.PRIMARY_RED} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
             {/* Email Input */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, error && styles.inputError]}
                 placeholder="Entrez votre email"
                 placeholderTextColor={COLORS.GRAY_LIGHT}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setError('');
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                editable={!loading}
               />
             </View>
 
@@ -92,12 +148,16 @@ const LoginScreen = () => {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Mot de passe *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, error && styles.inputError]}
                 placeholder="Entrez votre mot de passe"
                 placeholderTextColor={COLORS.GRAY_LIGHT}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setError('');
+                }}
                 secureTextEntry
+                editable={!loading}
               />
             </View>
           </View>
@@ -105,11 +165,16 @@ const LoginScreen = () => {
 
         {/* Bouton de connexion */}
         <View style={styles.buttonContainer}>
-          <ButtonCustom 
-            title="Se connecter" 
-            onPress={handleLogin} 
-            color={COLORS.PRIMARY_RED} 
-          />
+          {loading ? (
+            <ActivityIndicator size="large" color={COLORS.PRIMARY_RED} />
+          ) : (
+            <ButtonCustom
+              title="Se connecter"
+              onPress={handleLogin}
+              color={COLORS.PRIMARY_RED}
+              disabled={loading}
+            />
+          )}
         </View>
       </View>
     </View>
@@ -229,6 +294,26 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     alignItems: 'center',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F5',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FED7D7',
+  },
+  errorText: {
+    color: COLORS.PRIMARY_RED,
+    fontSize: 13,
+    marginLeft: 8,
+    flex: 1,
+  },
+  inputError: {
+    borderColor: COLORS.PRIMARY_RED,
+    borderWidth: 2,
   },
 });
 

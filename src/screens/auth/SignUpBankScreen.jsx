@@ -1,14 +1,30 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  ActivityIndicator,
+  StatusBar,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../../constants/colors';
 import BackgroundTop from '../../assets/image_1.svg';
 import BackgroundBottom from '../../assets/image_2.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ButtonCustom from '../../components/ButtonCustom';
+import { useAuth } from '../../contexts/AuthContext';
+import { ApiError } from '../../services/apiService';
+import { bloodBankProfileService } from '../../services/profileService';
+import { findBloodBankProfileId } from '../../utils/profileHelpers';
 
 const SignUpBankScreen = () => {
   const navigation = useNavigation();
+  const { register } = useAuth();
+
   const [formData, setFormData] = useState({
     nom: '',
     email: '',
@@ -17,64 +33,139 @@ const SignUpBankScreen = () => {
     confirmPassword: '',
   });
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
+    setError('');
   };
 
-  const handleContinue = () => {
-    console.log('Inscription banque de sang:', formData);
-    // Navigation vers le menu Bank
-    navigation.navigate('BankStack');
+  const validateForm = () => {
+    if (!formData.nom.trim()) {
+      setError('Le nom de la banque est requis');
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Email invalide');
+      return false;
+    }
+
+    if (!formData.localisation.trim()) {
+      setError('La localisation est requise');
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères');
+      return false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleContinue = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      // Étape 1 : Inscription via /registers/
+      await register({
+        username: formData.nom.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        role: 'bank',
+      });
+
+      // Étape 2 : Mettre à jour le profil BloodBank
+      const token = await import('../../utils/storage').then((m) => m.getToken());
+      const user = await import('../../utils/storage').then((m) => m.getUser());
+
+      if (token && user) {
+        // Trouver l'ID du profil blood bank
+        const bankId = await findBloodBankProfileId(user.id, token);
+
+        if (bankId) {
+          // Mettre à jour le profil avec toutes les informations
+          await bloodBankProfileService.updateProfile(
+            bankId,
+            {
+              name: formData.nom.trim(),
+              location: formData.localisation.trim(),
+            },
+            token
+          );
+        }
+      }
+
+      // La navigation sera gérée automatiquement par AppNavigator
+    } catch (err) {
+      console.error('Erreur d\'inscription:', err);
+
+      if (err instanceof ApiError) {
+        if (err.statusCode === 400) {
+          setError('Cet email est déjà utilisé');
+        } else {
+          setError(err.message || 'Une erreur est survenue lors de l\'inscription');
+        }
+      } else {
+        setError('Impossible de s\'inscrire. Vérifiez votre connexion internet.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.PRIMARY_RED} />
+
       {/* Image de fond supérieure SVG */}
       <View style={styles.topBackground}>
-        <BackgroundTop 
-          width="100%" 
-          height="100%" 
-          preserveAspectRatio="xMidYMid slice"
-        />
+        <BackgroundTop width="100%" height="100%" preserveAspectRatio="xMidYMid slice" />
       </View>
-      
+
       {/* Image de fond inférieure SVG */}
       <View style={styles.bottomBackground}>
-        <BackgroundBottom 
-          width="100%" 
-          height="100%" 
-          preserveAspectRatio="xMidYMid slice"
-        />
+        <BackgroundBottom width="100%" height="100%" preserveAspectRatio="xMidYMid slice" />
       </View>
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color={COLORS.BLACK} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Inscription</Text>
+        <Text style={styles.headerTitle}>Inscription Banque</Text>
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Logo et titre */}
         <View style={styles.logoContainer}>
-            <Image
-              source={require('../../assets/logo_bloodlink_sfond.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+          <Image
+            source={require('../../assets/logo_bloodlink_sfond.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
 
         <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>Bienvennue sur</Text>
+          <Text style={styles.welcomeText}>Bienvenue sur</Text>
           <View style={styles.titleContainer}>
             <Text style={styles.titleRed}>Blood</Text>
             <Text style={styles.titleBlack}>Link !</Text>
@@ -83,15 +174,24 @@ const SignUpBankScreen = () => {
 
         {/* Formulaire */}
         <View style={styles.formContainer}>
-          {/* Nom utilisateur */}
+          {/* Message d'erreur */}
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Icon name="alert-circle" size={20} color={COLORS.PRIMARY_RED} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
+
+          {/* Nom de la banque */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nom utilisateur *</Text>
+            <Text style={styles.label}>Nom de la banque *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Nom"
+              placeholder="Nom de la banque de sang"
               placeholderTextColor={COLORS.GRAY_LIGHT}
               value={formData.nom}
               onChangeText={(value) => handleInputChange('nom', value)}
+              editable={!loading}
             />
           </View>
 
@@ -106,6 +206,7 @@ const SignUpBankScreen = () => {
               onChangeText={(value) => handleInputChange('email', value)}
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!loading}
             />
           </View>
 
@@ -114,10 +215,13 @@ const SignUpBankScreen = () => {
             <Text style={styles.label}>Localisation *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Localisation"
+              placeholder="Ville, Quartier, Adresse"
               placeholderTextColor={COLORS.GRAY_LIGHT}
               value={formData.localisation}
               onChangeText={(value) => handleInputChange('localisation', value)}
+              editable={!loading}
+              multiline
+              numberOfLines={2}
             />
           </View>
 
@@ -131,6 +235,7 @@ const SignUpBankScreen = () => {
               value={formData.password}
               onChangeText={(value) => handleInputChange('password', value)}
               secureTextEntry
+              editable={!loading}
             />
           </View>
 
@@ -144,6 +249,7 @@ const SignUpBankScreen = () => {
               value={formData.confirmPassword}
               onChangeText={(value) => handleInputChange('confirmPassword', value)}
               secureTextEntry
+              editable={!loading}
             />
           </View>
 
@@ -151,8 +257,7 @@ const SignUpBankScreen = () => {
           <View style={styles.conditionsContainer}>
             <Text style={styles.conditionsText}>
               En continuant vous acceptez nos{' '}
-              <Text style={styles.conditionsLink}>conditions d'utilisation</Text>
-              {' '}et{' '}
+              <Text style={styles.conditionsLink}>conditions d'utilisation</Text> et{' '}
               <Text style={styles.conditionsLink}>politique de confidentialité</Text>.
             </Text>
           </View>
@@ -160,11 +265,16 @@ const SignUpBankScreen = () => {
 
         {/* Bouton continuer */}
         <View style={styles.buttonContainer}>
-          <ButtonCustom 
-            title="Continuer" 
-            onPress={handleContinue} 
-            color={COLORS.PRIMARY_RED}
-          />
+          {loading ? (
+            <ActivityIndicator size="large" color={COLORS.PRIMARY_RED} />
+          ) : (
+            <ButtonCustom
+              title="Continuer"
+              onPress={handleContinue}
+              color={COLORS.PRIMARY_RED}
+              disabled={loading}
+            />
+          )}
         </View>
       </ScrollView>
     </View>
@@ -210,7 +320,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.BLACK,
   },
@@ -227,15 +337,19 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 16,
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  logo: {
+    width: 70,
+    height: 70,
   },
   welcomeContainer: {
     alignItems: 'center',
     marginBottom: 40,
   },
   welcomeText: {
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.BLACK,
     fontWeight: 'bold',
     marginBottom: 5,
@@ -244,17 +358,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   titleRed: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
     color: COLORS.PRIMARY_RED,
   },
   titleBlack: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
     color: COLORS.BLACK,
   },
   formContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   inputGroup: {
     marginBottom: 16,
@@ -266,23 +380,25 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    height: 50,
+    minHeight: 50,
     borderWidth: 1.5,
     borderColor: COLORS.GRAY_LIGHT,
     borderRadius: 10,
     paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 14,
     color: COLORS.BLACK,
     backgroundColor: COLORS.WHITE,
+    textAlignVertical: 'top',
   },
   conditionsContainer: {
     marginTop: 16,
   },
   conditionsText: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.BLACK,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 16,
   },
   conditionsLink: {
     color: COLORS.PRIMARY_RED,
@@ -291,6 +407,23 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     alignItems: 'center',
+    marginTop: 10,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F5',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FED7D7',
+  },
+  errorText: {
+    color: COLORS.PRIMARY_RED,
+    fontSize: 13,
+    marginLeft: 8,
+    flex: 1,
   },
 });
 
