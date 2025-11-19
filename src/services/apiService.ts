@@ -2,7 +2,7 @@
  * Service API pour gérer toutes les requêtes HTTP vers le backend
  */
 
-import { API_BASE_URL, getDefaultHeaders, REQUEST_TIMEOUT } from '../config/api';
+import { API_BASE_URL, getDefaultHeaders, REQUEST_TIMEOUT, RETRY_CONFIG } from '../config/api';
 
 /**
  * Classe pour gérer les erreurs API
@@ -29,7 +29,12 @@ interface RequestOptions {
 }
 
 /**
- * Fonction principale pour effectuer des requêtes API
+ * Fonction utilitaire pour attendre un délai
+ */
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Fonction principale pour effectuer des requêtes API avec retry automatique
  */
 export const apiRequest = async <T>(
   endpoint: string,
@@ -46,42 +51,67 @@ export const apiRequest = async <T>(
     config.body = JSON.stringify(body);
   }
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  let lastError: any;
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...config,
-      signal: controller.signal,
-    });
+  // Retry logic
+  for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-    clearTimeout(timeoutId);
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...config,
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        response.status,
-        errorData.message || 'Une erreur est survenue',
-        errorData
-      );
-    }
+      clearTimeout(timeoutId);
 
-    const data = await response.json();
-    return data as T;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-
-    if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        throw new ApiError(408, 'La requête a expiré');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new ApiError(
+          response.status,
+          errorData.message || 'Une erreur est survenue',
+          errorData
+        );
       }
-      throw new ApiError(500, error.message);
-    }
 
-    throw new ApiError(500, 'Une erreur inconnue est survenue');
+      const data = await response.json();
+      return data as T;
+    } catch (error) {
+      lastError = error;
+
+      // Ne pas retry pour certaines erreurs (erreurs client 4xx sauf 408)
+      if (error instanceof ApiError) {
+        if (error.statusCode >= 400 && error.statusCode < 500 && error.statusCode !== 408) {
+          throw error;
+        }
+      }
+
+      // Si ce n'est pas la dernière tentative, attendre avant de retry
+      if (attempt < RETRY_CONFIG.maxRetries) {
+        console.log(`Tentative ${attempt + 1}/${RETRY_CONFIG.maxRetries + 1} échouée, retry dans ${RETRY_CONFIG.retryDelay}ms...`);
+        await wait(RETRY_CONFIG.retryDelay * (attempt + 1)); // Backoff exponentiel
+        continue;
+      }
+
+      // Dernière tentative échouée, on lance l'erreur
+      if (error instanceof ApiError) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new ApiError(408, 'La requête a expiré après plusieurs tentatives');
+        }
+        throw new ApiError(500, error.message);
+      }
+
+      throw new ApiError(500, 'Une erreur inconnue est survenue');
+    }
   }
+
+  // On ne devrait jamais arriver ici, mais au cas où
+  throw lastError || new ApiError(500, 'Une erreur inconnue est survenue');
 };
 
 /**

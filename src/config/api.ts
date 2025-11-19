@@ -63,7 +63,8 @@ export const getDefaultHeaders = (token?: string) => {
 };
 
 // Timeout pour les requêtes (en millisecondes)
-export const REQUEST_TIMEOUT = 30000; // 30 secondes
+// Augmenté à 90 secondes pour gérer les "cold starts" du serveur Render
+export const REQUEST_TIMEOUT = 90000; // 90 secondes
 
 // Configuration pour le retry des requêtes
 export const RETRY_CONFIG = {
