@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, StatusBar } from 'react-native';
 import ButtonCustom from '../components/ButtonCustom';
 import { COLORS } from '../constants/colors';
 import BackgroundTop from '../assets/image_1.svg';
@@ -13,8 +13,16 @@ const FirstScreen = ({navigation}) => {
     });
   };
 
+  const handleSelectRegister = () => {
+    navigation.navigate('SelectUser', { 
+      
+    });
+  };
+
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.PRIMARY_RED} />
+
       {/* Image de fond supérieure SVG */}
       <View style={styles.topBackground}>
         <BackgroundTop 
@@ -56,7 +64,7 @@ const FirstScreen = ({navigation}) => {
           />
           <ButtonCustom 
             title="S'inscrire" 
-            onPress={() => {}} 
+            onPress={handleSelectRegister} 
             color={COLORS.PRIMARY_BLUE} 
           />
         </View>

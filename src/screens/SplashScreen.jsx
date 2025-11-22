@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/colors';
 
@@ -16,6 +16,8 @@ const SplashScreen = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.PRIMARY_RED} />
+
       <View style={styles.contentContainer}>
         <Image
           source={require('../assets/logo_bloodlink_sfond.png')}
