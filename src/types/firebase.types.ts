@@ -111,6 +111,8 @@ export interface FirebaseBloodRequest extends FirebaseDocument {
   bloodGroup: BloodGroup;
   rhesus: Rhesus;
   quantity: number;
+  urgencyLevel?: 'low' | 'medium' | 'high' | 'critical';
+  patientInfo?: string | null;
   status: RequestStatus;
   requestDate: FirebaseFirestoreTypes.Timestamp;
   notes: string | null;
@@ -137,6 +139,7 @@ export interface FirebaseBloodTransaction extends FirebaseDocument {
 export interface FirebaseAlert extends FirebaseDocument {
   bloodBankId: string; // Référence à la banque qui envoie l'alerte
   bankName: string;
+  bankLocation?: string; // Localisation de la banque
   bloodGroup: BloodGroup;
   rhesus: Rhesus;
   message: string;
@@ -144,6 +147,12 @@ export interface FirebaseAlert extends FirebaseDocument {
   status: 'active' | 'resolved' | 'cancelled';
   alertDate: FirebaseFirestoreTypes.Timestamp;
   responseCount: number; // Nombre de réponses reçues
+  // Informations sur l'initiateur de l'alerte
+  initiatedBy: 'bank' | 'doctor'; // Qui a initié l'alerte
+  doctorId?: string; // Si initié par un médecin
+  doctorName?: string; // Nom du médecin
+  hospitalName?: string; // Nom de l'hôpital du médecin
+  requestId?: string; // Référence à la demande de sang approuvée
 }
 
 /**

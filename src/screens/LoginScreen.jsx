@@ -6,7 +6,7 @@ import BackgroundTop from '../assets/image_1.svg';
 import BackgroundBottom from '../assets/image_2.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ButtonCustom from '../components/ButtonCustom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContextFirebase';
 import { ApiError } from '../services/apiService';
 
 const LoginScreen = () => {

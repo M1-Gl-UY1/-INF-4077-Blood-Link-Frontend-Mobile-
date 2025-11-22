@@ -2,7 +2,7 @@ import React from 'react';
 import { StatusBar, StyleSheet, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
-import { AuthProvider } from './src/contexts/AuthContext';
+import { AuthProvider } from './src/contexts/AuthContextFirebase';
 import { COLORS } from './src/constants/colors';
 
 function App() {
@@ -21,7 +21,7 @@ function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.WHITE, 
+    backgroundColor: COLORS.WHITE,
   },
 });
 

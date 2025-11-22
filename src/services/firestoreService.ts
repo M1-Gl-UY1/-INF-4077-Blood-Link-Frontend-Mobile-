@@ -99,6 +99,44 @@ class FirestoreService {
     }
   }
 
+  /**
+   * Met à jour le token FCM d'un médecin
+   */
+  async updateDoctorFcmToken(uid: string, fcmToken: string | null): Promise<void> {
+    try {
+      await firebaseFirestore
+        .collection(FIREBASE_COLLECTIONS.DOCTORS)
+        .doc(uid)
+        .update({
+          fcmToken: fcmToken || null,
+          updatedAt: firestore.Timestamp.now(),
+        });
+      console.log('Token FCM du médecin mis à jour');
+    } catch (error: any) {
+      console.error('Erreur lors de la mise à jour du token FCM du médecin:', error);
+      throw new Error(getFirebaseErrorMessage(error));
+    }
+  }
+
+  /**
+   * Met à jour le token FCM d'une banque de sang
+   */
+  async updateBloodBankFcmToken(uid: string, fcmToken: string | null): Promise<void> {
+    try {
+      await firebaseFirestore
+        .collection(FIREBASE_COLLECTIONS.BLOOD_BANKS)
+        .doc(uid)
+        .update({
+          fcmToken: fcmToken || null,
+          updatedAt: firestore.Timestamp.now(),
+        });
+      console.log('Token FCM de la banque de sang mis à jour');
+    } catch (error: any) {
+      console.error('Erreur lors de la mise à jour du token FCM de la banque:', error);
+      throw new Error(getFirebaseErrorMessage(error));
+    }
+  }
+
   // ============================================
   // OPÉRATIONS SUR LES PROVIDERS (DONNEURS)
   // ============================================
@@ -625,6 +663,64 @@ class FirestoreService {
         });
     } catch (error: any) {
       console.error('Erreur lors de la mise à jour du statut de la demande:', error);
+      throw new Error(getFirebaseErrorMessage(error));
+    }
+  }
+
+  /**
+   * Récupérer les demandes de sang en attente pour une banque
+   */
+  async getPendingBloodRequestsByBank(bankId: string): Promise<FirebaseBloodRequest[]> {
+    try {
+      const snapshot = await firebaseFirestore
+        .collection(FIREBASE_COLLECTIONS.BLOOD_REQUESTS)
+        .where('bloodBankId', '==', bankId)
+        .where('status', '==', 'pending')
+        .orderBy('requestDate', 'desc')
+        .get();
+
+      return snapshot.docs.map(doc => doc.data() as FirebaseBloodRequest);
+    } catch (error: any) {
+      console.error('Erreur lors de la récupération des demandes en attente:', error);
+      throw new Error(getFirebaseErrorMessage(error));
+    }
+  }
+
+  /**
+   * Écouter les demandes de sang d'une banque en temps réel
+   */
+  subscribeToBloodRequestsByBank(
+    bankId: string,
+    callback: (requests: FirebaseBloodRequest[]) => void
+  ): () => void {
+    return firebaseFirestore
+      .collection(FIREBASE_COLLECTIONS.BLOOD_REQUESTS)
+      .where('bloodBankId', '==', bankId)
+      .orderBy('requestDate', 'desc')
+      .onSnapshot(
+        (snapshot) => {
+          const requests = snapshot.docs.map(doc => doc.data() as FirebaseBloodRequest);
+          callback(requests);
+        },
+        (error) => {
+          console.error('Erreur lors de l\'écoute des demandes:', error);
+        }
+      );
+  }
+
+  /**
+   * Récupérer tous les providers actifs
+   */
+  async getAllActiveProviders(): Promise<FirebaseProvider[]> {
+    try {
+      const snapshot = await firebaseFirestore
+        .collection(FIREBASE_COLLECTIONS.PROVIDERS)
+        .where('isActive', '==', true)
+        .get();
+
+      return snapshot.docs.map(doc => doc.data() as FirebaseProvider);
+    } catch (error: any) {
+      console.error('Erreur lors de la récupération des providers:', error);
       throw new Error(getFirebaseErrorMessage(error));
     }
   }

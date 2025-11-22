@@ -16,10 +16,8 @@ import BackgroundTop from '../../assets/image_1.svg';
 import BackgroundBottom from '../../assets/image_2.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ButtonCustom from '../../components/ButtonCustom';
-import { useAuth } from '../../contexts/AuthContext';
-import { ApiError } from '../../services/apiService';
-import { bloodBankProfileService } from '../../services/profileService';
-import { findBloodBankProfileId } from '../../utils/profileHelpers';
+import { useAuth } from '../../contexts/AuthContextFirebase';
+import { firestoreService } from '../../services/firestoreService';
 
 const SignUpBankScreen = () => {
   const navigation = useNavigation();
@@ -80,7 +78,7 @@ const SignUpBankScreen = () => {
       setLoading(true);
       setError('');
 
-      // Étape 1 : Inscription via /registers/
+      // Étape 1 : Inscription Firebase (crée le compte Auth + profil Firestore)
       await register({
         username: formData.nom.trim(),
         email: formData.email.trim(),
@@ -88,39 +86,33 @@ const SignUpBankScreen = () => {
         role: 'bank',
       });
 
-      // Étape 2 : Mettre à jour le profil BloodBank
-      const token = await import('../../utils/storage').then((m) => m.getToken());
-      const user = await import('../../utils/storage').then((m) => m.getUser());
+      // Étape 2 : Mettre à jour le profil avec les informations supplémentaires
+      // Récupérer l'utilisateur connecté depuis Firebase Auth
+      const { default: auth } = await import('@react-native-firebase/auth');
+      const currentUser = auth().currentUser;
 
-      if (token && user) {
-        // Trouver l'ID du profil blood bank
-        const bankId = await findBloodBankProfileId(user.id, token);
-
-        if (bankId) {
-          // Mettre à jour le profil avec toutes les informations
-          await bloodBankProfileService.updateProfile(
-            bankId,
-            {
-              name: formData.nom.trim(),
-              location: formData.localisation.trim(),
-            },
-            token
-          );
-        }
+      if (currentUser) {
+        // Mettre à jour le profil BloodBank avec name et location
+        await firestoreService.updateBloodBank(currentUser.uid, {
+          name: formData.nom.trim(),
+          location: formData.localisation.trim(),
+        });
       }
 
       // La navigation sera gérée automatiquement par AppNavigator
+      // car isAuthenticated passera à true
     } catch (err) {
       console.error('Erreur d\'inscription:', err);
 
-      if (err instanceof ApiError) {
-        if (err.statusCode === 400) {
-          setError('Cet email est déjà utilisé');
-        } else {
-          setError(err.message || 'Une erreur est survenue lors de l\'inscription');
-        }
+      const errorMessage = err.message || '';
+      if (errorMessage.includes('email-already-in-use') || errorMessage.includes('déjà utilisé')) {
+        setError('Cet email est déjà utilisé');
+      } else if (errorMessage.includes('weak-password')) {
+        setError('Le mot de passe est trop faible');
+      } else if (errorMessage.includes('invalid-email')) {
+        setError('Email invalide');
       } else {
-        setError('Impossible de s\'inscrire. Vérifiez votre connexion internet.');
+        setError(errorMessage || 'Impossible de s\'inscrire. Vérifiez votre connexion internet.');
       }
     } finally {
       setLoading(false);

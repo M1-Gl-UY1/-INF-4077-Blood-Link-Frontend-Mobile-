@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, ActivityIndicator } from 'react-native';
@@ -18,13 +18,20 @@ import EditProfilScreen from '../screens/BankScreens/Editprofilscreen';
 import ActiveAlertsScreen from '../screens/BankScreens/ActiveAlertsScreen';
 import AlertRequestsScreen from '../screens/BankScreens/AlertRequestsScreen';
 import AlertResponses from '../screens/BankScreens/AlertResponsesScreen';
-import { useAuth } from '../contexts/AuthContext';
+import AlertDonorsScreen from '../screens/BankScreens/AlertDonorsScreen';
+import EditDoctorProfile from '../screens/DoctorScreens/EditDoctorProfile';
+import { useAuth } from '../contexts/AuthContextFirebase';
+import { useNotifications, setNavigationRef } from '../hooks/useNotifications';
 import { COLORS } from '../constants/colors';
 
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const navigationRef = useRef(null);
+
+  // Initialiser les notifications
+  useNotifications();
 
   // Affiche un loading pendant la vérification de l'authentification
   if (isLoading) {
@@ -36,7 +43,12 @@ const AppNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={() => {
+        setNavigationRef(navigationRef.current);
+      }}
+    >
       <Stack.Navigator
         screenOptions={{ headerShown: false, animation: 'none' }}
       >
@@ -65,6 +77,7 @@ const AppNavigator = () => {
             {user?.role === 'doctor' && (
               <>
                 <Stack.Screen name="DoctorStack" component={DoctorStack} />
+                <Stack.Screen name="EditDoctorProfile" component={EditDoctorProfile} />
               </>
             )}
 
@@ -76,6 +89,7 @@ const AppNavigator = () => {
                 <Stack.Screen name="ActiveAlerts" component={ActiveAlertsScreen} />
                 <Stack.Screen name="AlertRequests" component={AlertRequestsScreen} />
                 <Stack.Screen name="AlertResponses" component={AlertResponses} />
+                <Stack.Screen name="AlertDonors" component={AlertDonorsScreen} />
               </>
             )}
           </>

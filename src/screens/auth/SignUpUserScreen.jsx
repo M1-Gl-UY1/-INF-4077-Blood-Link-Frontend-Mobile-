@@ -19,11 +19,10 @@ import BackgroundBottom from '../../assets/image_2.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ButtonCustom from '../../components/ButtonCustom';
 import PickerField from '../../components/PickerField';
-import { useAuth } from '../../contexts/AuthContext';
-import { ApiError } from '../../services/apiService';
-import { providerProfileService } from '../../services/profileService';
-import { findProviderProfileId } from '../../utils/profileHelpers';
-import { GENDER_OPTIONS, BLOOD_GROUPS, RHESUS_OPTIONS, RHESUS_API_MAP } from '../../constants/enums';
+import { useAuth } from '../../contexts/AuthContextFirebase';
+import { firestoreService } from '../../services/firestoreService';
+import firestore from '@react-native-firebase/firestore';
+import { GENDER_OPTIONS, BLOOD_GROUPS, RHESUS_OPTIONS } from '../../constants/enums';
 
 const SignUpUserScreen = () => {
   const navigation = useNavigation();
@@ -110,7 +109,7 @@ const SignUpUserScreen = () => {
       setLoading(true);
       setError('');
 
-      // Étape 1 : Inscription via /registers/
+      // Étape 1 : Inscription Firebase (crée le compte Auth + profil Firestore)
       await register({
         username: formData.nom.trim(),
         email: formData.email.trim(),
@@ -118,46 +117,36 @@ const SignUpUserScreen = () => {
         role: 'provider',
       });
 
-      // Étape 2 : L'AuthContext gère le login automatiquement
-      // On doit maintenant mettre à jour le profil Provider
-      // On récupère le token et user_id depuis le contexte
-      const token = await import('../../utils/storage').then((m) => m.getToken());
-      const user = await import('../../utils/storage').then((m) => m.getUser());
+      // Étape 2 : Mettre à jour le profil avec les informations supplémentaires
+      const { default: auth } = await import('@react-native-firebase/auth');
+      const currentUser = auth().currentUser;
 
-      if (token && user) {
-        // Trouver l'ID du profil provider
-        const providerId = await findProviderProfileId(user.id, token);
-
-        if (providerId) {
-          // Mettre à jour le profil avec toutes les informations
-          await providerProfileService.updateProfile(
-            providerId,
-            {
-              name: formData.nom.trim(),
-              sexe: formData.sexe,
-              date_birth: formatDate(formData.naissance),
-              email: formData.email.trim(),
-              phone_number: formData.telephone.trim(),
-              blood_group: formData.groupeSanguin,
-              rhesus: formData.rhesus,
-            },
-            token
-          );
-        }
+      if (currentUser) {
+        // Mettre à jour le profil Provider avec toutes les informations
+        await firestoreService.updateProvider(currentUser.uid, {
+          name: formData.nom.trim(),
+          sexe: formData.sexe,
+          dateBirth: firestore.Timestamp.fromDate(formData.naissance),
+          phoneNumber: formData.telephone.trim(),
+          bloodGroup: formData.groupeSanguin,
+          rhesus: formData.rhesus,
+        });
       }
 
       // La navigation sera gérée automatiquement par AppNavigator
+      // car isAuthenticated passera à true
     } catch (err) {
       console.error('Erreur d\'inscription:', err);
 
-      if (err instanceof ApiError) {
-        if (err.statusCode === 400) {
-          setError('Cet email est déjà utilisé');
-        } else {
-          setError(err.message || 'Une erreur est survenue lors de l\'inscription');
-        }
+      const errorMessage = err.message || '';
+      if (errorMessage.includes('email-already-in-use') || errorMessage.includes('déjà utilisé')) {
+        setError('Cet email est déjà utilisé');
+      } else if (errorMessage.includes('weak-password')) {
+        setError('Le mot de passe est trop faible');
+      } else if (errorMessage.includes('invalid-email')) {
+        setError('Email invalide');
       } else {
-        setError('Impossible de s\'inscrire. Vérifiez votre connexion internet.');
+        setError(errorMessage || 'Impossible de s\'inscrire. Vérifiez votre connexion internet.');
       }
     } finally {
       setLoading(false);
