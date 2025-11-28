@@ -7,7 +7,6 @@ import BackgroundBottom from '../assets/image_2.svg';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ButtonCustom from '../components/ButtonCustom';
 import { useAuth } from '../contexts/AuthContextFirebase';
-import { ApiError } from '../services/apiService';
 
 const LoginScreen = () => {
   const navigation = useNavigation();
@@ -45,16 +44,35 @@ const LoginScreen = () => {
     } catch (err) {
       console.error('Erreur de connexion:', err);
 
-      if (err instanceof ApiError) {
-        if (err.statusCode === 401) {
-          setError('Email ou mot de passe incorrect');
-        } else if (err.statusCode === 404) {
-          setError('Utilisateur non trouvé');
-        } else {
-          setError(err.message || 'Une erreur est survenue lors de la connexion');
-        }
+      const errorMessage = err.message || '';
+      const errorCode = err.code || '';
+
+      // Gestion des erreurs Firebase Auth
+      if (errorCode.includes('user-not-found') || errorMessage.includes('user-not-found') || errorMessage.includes('non trouvé')) {
+        Alert.alert(
+          'Compte inexistant',
+          'Aucun compte n\'existe avec cet email. Voulez-vous créer un compte ?',
+          [
+            { text: 'Annuler', style: 'cancel' },
+            {
+              text: 'S\'inscrire',
+              onPress: () => navigation.navigate('SelectUser')
+            },
+          ]
+        );
+        setError('Aucun compte trouvé avec cet email');
+      } else if (errorCode.includes('wrong-password') || errorMessage.includes('wrong-password') || errorMessage.includes('incorrect')) {
+        setError('Mot de passe incorrect. Veuillez réessayer.');
+      } else if (errorCode.includes('invalid-email') || errorMessage.includes('invalid-email')) {
+        setError('Format d\'email invalide');
+      } else if (errorCode.includes('too-many-requests') || errorMessage.includes('too-many-requests')) {
+        setError('Trop de tentatives. Veuillez réessayer plus tard.');
+      } else if (errorCode.includes('network') || errorMessage.includes('network')) {
+        setError('Erreur de connexion. Vérifiez votre connexion internet.');
+      } else if (errorCode.includes('invalid-credential') || errorMessage.includes('invalid-credential')) {
+        setError('Email ou mot de passe incorrect');
       } else {
-        setError('Impossible de se connecter. Vérifiez votre connexion internet.');
+        setError(errorMessage || 'Une erreur est survenue lors de la connexion');
       }
     } finally {
       setLoading(false);

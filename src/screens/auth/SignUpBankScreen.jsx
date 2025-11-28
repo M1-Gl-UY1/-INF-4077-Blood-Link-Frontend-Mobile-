@@ -9,6 +9,7 @@ import {
   Image,
   ActivityIndicator,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../../constants/colors';
@@ -105,12 +106,30 @@ const SignUpBankScreen = () => {
       console.error('Erreur d\'inscription:', err);
 
       const errorMessage = err.message || '';
-      if (errorMessage.includes('email-already-in-use') || errorMessage.includes('déjà utilisé')) {
-        setError('Cet email est déjà utilisé');
-      } else if (errorMessage.includes('weak-password')) {
-        setError('Le mot de passe est trop faible');
-      } else if (errorMessage.includes('invalid-email')) {
-        setError('Email invalide');
+      const errorCode = err.code || '';
+
+      // Gestion des erreurs Firebase Auth
+      if (errorCode.includes('email-already-in-use') || errorMessage.includes('email-already-in-use') || errorMessage.includes('déjà utilisé')) {
+        Alert.alert(
+          'Email déjà utilisé',
+          'Un compte existe déjà avec cet email. Voulez-vous vous connecter ?',
+          [
+            { text: 'Annuler', style: 'cancel' },
+            {
+              text: 'Se connecter',
+              onPress: () => navigation.navigate('Login')
+            },
+          ]
+        );
+        setError('Cet email appartient déjà à un compte existant');
+      } else if (errorCode.includes('weak-password') || errorMessage.includes('weak-password')) {
+        setError('Le mot de passe est trop faible. Utilisez au moins 6 caractères.');
+      } else if (errorCode.includes('invalid-email') || errorMessage.includes('invalid-email')) {
+        setError('Format d\'email invalide');
+      } else if (errorCode.includes('network') || errorMessage.includes('network')) {
+        setError('Erreur de connexion. Vérifiez votre connexion internet.');
+      } else if (errorCode.includes('too-many-requests') || errorMessage.includes('too-many-requests')) {
+        setError('Trop de tentatives. Veuillez réessayer plus tard.');
       } else {
         setError(errorMessage || 'Impossible de s\'inscrire. Vérifiez votre connexion internet.');
       }
